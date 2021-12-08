@@ -25,3 +25,8 @@ Gemfile.lock
 _site/
 .jekyll-metadata
 .jekyll-cache/
+_posts/.obsidian/app.json
+_posts/.obsidian/appearance.json
+_posts/.obsidian/core-plugins.json
+_posts/.obsidian/hotkeys.json
+_posts/.obsidian/workspace
