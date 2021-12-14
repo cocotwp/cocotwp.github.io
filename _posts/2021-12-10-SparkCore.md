@@ -49,7 +49,7 @@ toc: true
 
 ### RDD 的创建
 
-**并行化创建**（集合对象）
+#### 并行化创建（集合对象）
 
 API：
 ```python
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     print(rdd.collect())
 ```
 
-**读取外部数据源**
+#### 读取外部数据源
 
 API：
 ```python
@@ -246,6 +246,261 @@ RDD.groupBy(f, numPartitions=None, partitionFunc=<function portable_hash>)
 rdd = sc.parallelize([('a', 1), ('b', 2), ('c', 1), ('a', 1)])
 result = rdd.groupBy(lambda x: x[0])
 print(result.map(lambda x: (x[0], list(x[1]))).collect())
+```
+
+#### filter
+
+过滤想要保留的数据，返回是 True 的数据被保留，返回时 False 的数据被丢弃
+
+API:
+```python
+RDD.filter(f)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+# 筛选偶数
+print(rdd.filter(lambda x: x % 2 == 0).collect())
+```
+
+#### distinct 
+
+对 RDD 数据进行去重
+
+API：
+```python
+RDD.distinct(numPartitions=None)
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('b', 2), ('c', 1), ('a', 1)])
+print(rdd.distinct().collect())
+```
+
+#### union
+
+一个 RDD 和另一个 RDD 合并
+
+> 只合并，不会去重
+
+> 不同类型的 RDD 也可以合并
+
+API：
+```python
+RDD.union(other)
+```
+
+代码：
+```python
+rdd1 = sc.parallelize([1, 2, 3])
+rdd2 = sc.parallelize(['a', 'b', 'c'])
+print(rdd1.union(rdd2).collect())
+```
+
+#### join、leftOuterJoin
+
+类似于 SQL 中的 join\
+但是，只适用于二元元组，且不能指定关联条件
+
+API：
+```python
+RDD.join(other, numPartitions=None)
+RDD.leftOuterJoin(other, numPartitions=None)
+```
+
+代码：
+```python
+rdd1 = sc.parallelize([('a', 'wang'), ('a', 'li'), ('b', 'zhang'),
+					   ('c', 'xu')])
+rdd2 = sc.parallelize([('a', 'sales'), ('b', 'tech')])
+print(rdd1.join(rdd2).collect())
+print(rdd1.leftOuterJoin(rdd2).collect())
+```
+
+#### intersection
+
+求两个 RDD 的交集
+
+API：
+```python
+RDD.intersection(other)
+```
+
+代码：
+```python
+rdd1 = sc.parallelize(['a', 'b', 'c'])
+rdd2 = sc.parallelize(['c', 'c', 'd'])
+print(rdd1.intersection(rdd2).collect())
+```
+
+#### glom
+
+按照分区，将 RDD 划分成 List
+
+ API：
+ ```python
+ RDD.glom()
+ ```
+ 
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+print(rdd.glom().collect())
+```
+
+#### sortBy
+
+对 RDD 进行排序，基于你指定的排序依据
+
+API：
+```python
+RDD.sortBy(keyfunc, ascending=True, numPartitions=None)
+```
+
+代码：
+```python
+rdd = sc.parallelize([5, 2, 3, 7, 9, 1, 6, 8, 4], 3)
+print(rdd.sortBy(lambda x: x, ascending=True, numPartitions=3).collect())
+```
+
+#### sortByKey
+
+针对 KV 型 RDD，按照 key 进行排序
+
+API：
+```python
+RDD.sortByKey(ascending=True, numPartitions=None, keyfunc=<function RDD.<lambda>>)
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('B', 1), ('A', 1), ('b', 1)])
+# print(rdd.sortByKey(True).collect())
+print(rdd.sortByKey(True, keyfunc=lambda x: str(x).lower()).collect())
+```
+
+### 常用动作算子
+
+#### countByKey
+
+统计 key 出现的次数（一般适用于 KV 型 RDD）\
+结果为 dict
+
+API：
+```python
+RDD.countByKey()
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('b', 2), ('c', 1), ('a', 1)])
+print(rdd.countByKey())
+```
+
+#### collect
+
+将 RDD 各个分区内的数据收集到 Driver 中\
+结果为 list 
+
+API：
+```python
+RDD.collect()
+```
+
+#### reduce
+
+对 RDD 数据集按照指定方法进行聚合\
+方法中参数和返回值要求类型一致
+
+API：
+```python
+RDD.reduce(f)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+print(rdd.reduce(lambda a, b: a + b))
+```
+
+#### fold
+
+和 [[2021-12-10-SparkCore#reduce|reduce]] 类似，按照指定方法进行聚合，但是是带有初始值的\
+这个初始值会作用在
+- 分区内聚合
+- 分区间聚合
+
+API：
+```python
+RDD.fold(zeroValue, op)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+print(rdd.fold(10, lambda a, b: a + b))
+```
+
+#### first
+
+取出 RDD 的第一个元素
+
+API：
+```python
+RDD.first()
+```
+
+#### take
+
+取 RDD 中前 N 个元素\
+结果为 list
+
+API：
+```python
+RDD.take(num)
+```
+
+#### top
+
+对 RDD 进行降序排序后，取前 N 个
+
+API：
+```python
+RDD.top(num, key=None)
+```
+
+#### count
+
+统计 RDD 中有多少条数据
+
+API：
+```python
+RDD.count()
+```
+
+#### takeSample
+
+随机抽样\
+参数 `withReplacement` 表示抽样是否允许放回：True 表示允许，False 表示不允许
+
+API：
+```python
+RDD.takeSample(withReplacement, num, seed=None)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+print(rdd.takeSample(True, 3))
+```
+
+#### takeOrdered
+
+API：
+```python
+RDD.takeOrdered(num, key=None)
 ```
 
 
