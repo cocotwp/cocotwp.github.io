@@ -47,6 +47,207 @@ toc: true
 
 ## 第2章 RDD 编程入门
 
+### RDD 的创建
+
+**并行化创建**（集合对象）
+
+API：
+```python
+SparkContext.parallelize(_c_, _numSlices=None_)
+```
+
+代码：
+```python
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9])  # 默认分区数
+    print(rdd.getNumPartitions())
+
+    rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)  # 指定分区数
+    print(rdd.getNumPartitions())
+
+    print(rdd.collect())
+```
+
+**读取外部数据源**
+
+API：
+```python
+SparkContext.textFile(_name_, _minPartitions=None_, _use_unicode=True_)
+```
+
+支持本地文件、HDFS、S3协议
+
+代码：
+```python
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    sc.setLogLevel('INFO')
+
+    file_rdd1 = sc.textFile('./data/input/words.txt')
+    print(file_rdd1.getNumPartitions())
+    print(file_rdd1.collect())
+
+    file_rdd2 = sc.textFile('./data/input/words.txt', 3)
+    print(file_rdd2.getNumPartitions())
+
+    file_rdd3 = sc.textFile('./data/input/words.txt', 100)
+    print(file_rdd3.getNumPartitions())
+```
+
+API：
+```python
+SparkContext.wholeTextFiles(path, minPartitions=None, use_unicode=True)
+```
+
+适合读取一堆小文件\
+同样支持本地文件、HDFS、S3协议
+
+代码：
+```python
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    rdd = sc.wholeTextFiles('./data/input/tiny_files', 3)
+    print(rdd.collect())
+```
+
+### RDD 算子
+
+**算子是什么**
+
+分布式集合对象上的 API 称为*算子*。
+
+分成两类：
+- *转换（Transformation）算子*：返回值仍旧是一个 RDD 的
+- *动作（Action）算子*：返回值**不是** RDD 的
+
+> **懒加载**：转换算子只是在构建执行计划，动作算子是一个指令让执行计划开始工作。
+
+### 常用转换算子
+
+#### map
+
+将方法应用到 RDD 中的每个元素
+
+API：
+```python
+RDD.map(f, preservesPartitioning=False)
+```
+
+代码：
+```python
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+
+    # def double(num):
+    #     return num * 2
+
+    # print(rdd.map(double).collect())
+
+    print(rdd.map(lambda x: x * 2).collect())
+```
+
+#### flatMap
+
+先进行 map 操作，再进行 **展平** 操作
+
+API：
+```python
+RDD.flatMap(f, preservesPartitioning=False)
+```
+
+代码：
+```python
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    rdd = sc.parallelize(["hello spark", "hello apache", "hello replit"])
+    rdd2 = rdd.flatMap(lambda x: x.split(" "))
+    print(rdd2.collect())
+```
+
+#### reduceByKey
+
+针对 KV 型 RDD，自动按照 key 分组，然后对 value 应用聚合函数。
+
+聚合逻辑如下图：
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/reduceByKey算子聚合逻辑.png" alt="reduceByKey算子聚合逻辑" width="50%"/>
+</div>
+
+API：
+```python
+RDD.reduceByKey(func, numPartitions=None, partitionFunc=<function portable_hash>)
+```
+
+代码：
+```spark
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    # 实现 WordCount
+    rdd = sc.textFile('./data/input/words.txt')
+    rdd1 = rdd.flatMap(lambda x: x.split(" "))
+    rdd2 = rdd1.map(lambda x: (x, 1))
+    rdd3 = rdd2.reduceByKey(lambda a, b: a + b)
+    print(rdd3.collect())
+```
+
+#### mapValue
+
+针对KV 型 RDD，对 value 应用 map 函数，不影响 key
+
+API：
+```python
+RDD.mapValues(f)
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('b', 2), ('c', 3)])
+print(rdd.mapValues(lambda x: x * 2).collect())
+```
+
+#### groupBy
+
+将 RDD 的数据进行分组
+
+API：
+```python
+RDD.groupBy(f, numPartitions=None, partitionFunc=<function portable_hash>)
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('b', 2), ('c', 1), ('a', 1)])
+result = rdd.groupBy(lambda x: x[0])
+print(result.map(lambda x: (x[0], list(x[1]))).collect())
+```
+
 
 
 ## 第3章 RDD 持久化
