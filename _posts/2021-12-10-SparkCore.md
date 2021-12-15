@@ -618,18 +618,18 @@ print(rdd.partitionBy(2, partitionFunc=lambda x: x % 2).glom().collect())
 
 > **注意**：对分区的数量进行操作，一定要慎重
 
- API：
- ```python
- RDD.repartition(numPartitions)
- ```
+API：
+```python
+RDD.repartition(numPartitions)
+```
+
+#### coalesce
+
+与 [[2021-12-10-SparkCore#repartition|repartition]] 类似，可以修改 RDD 的分区数据\
+不同的是，第2个参数表示增加分区是否需要 `shuffle`，默认是 False\
+如果不指定 `shuffle=True`，则只能减少分区，更加“安全”
  
- #### coalesce
- 
- 与 [[2021-12-10-SparkCore#repartition|repartition]] 类似，可以修改 RDD 的分区数据\
- 不同的是，第2个参数表示增加分区是否需要 `shuffle`，默认是 False\
- 如果不指定 `shuffle=True`，则只能减少分区，更加“安全”
- 
- API：
- ```python
- RDD.coalesce(numPartitions, shuffle=False)
- ```
+API：
+```python
+RDD.coalesce(numPartitions, shuffle=False)
+```
