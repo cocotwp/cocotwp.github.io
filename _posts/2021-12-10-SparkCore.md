@@ -1,6 +1,6 @@
 ---
 layout: article
-title: Spark Core
+title: Spark Core - Part I
 tags: 
 - Spark
 - 黑马
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     print(rdd3.collect())
 ```
 
-#### mapValue
+#### mapValues
 
 针对KV 型 RDD，对 value 应用 map 函数，不影响 key
 
@@ -350,6 +350,22 @@ rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
 print(rdd.glom().collect())
 ```
 
+#### groupByKey
+
+针对 KV 型 RDD，自动按照 key 分组
+
+API：
+```python
+RDD.groupByKey(numPartitions=None, partitionFunc=<function portable_hash>)
+```
+
+代码：
+```python
+rdd = sc.parallelize([('a', 1), ('a',1), ('b',1), ('b',1), ('a',1)])
+groupby_rdd = rdd.groupByKey()
+print(groupby_rdd.mapValues(lambda x: sum(x)).collect())
+```
+
 #### sortBy
 
 对 RDD 进行排序，基于你指定的排序依据
@@ -428,9 +444,7 @@ print(rdd.reduce(lambda a, b: a + b))
 #### fold
 
 和 [[2021-12-10-SparkCore#reduce|reduce]] 类似，按照指定方法进行聚合，但是是带有初始值的\
-这个初始值会作用在
-- 分区内聚合
-- 分区间聚合
+这个初始值会作用在：分区内聚合、分区间聚合
 
 API：
 ```python
@@ -498,17 +512,124 @@ print(rdd.takeSample(True, 3))
 
 #### takeOrdered
 
+对 RDD 排序后取前 N 个\
+与 [[2021-12-10-SparkCore#top|top]] 不同的是，既可以升序（默认），也可以通过可选的方法实现降序
+
 API：
 ```python
 RDD.takeOrdered(num, key=None)
 ```
 
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+print(rdd.takeOrdered(5))
+print(rdd.takeOrdered(5, key=lambda x: -x))
+```
 
+#### foreach
 
-## 第3章 RDD 持久化
+和 [[2021-12-10-SparkCore#map|map]] 类似，将方法应用到 RDD 中的每个元素，**但是**这个方法没有返回值
 
-## 第4章 RDD 案例练习
+> 在 Executor 中分布式执行，不需要向 Driver 汇报，因此在某些场景下更加高效。
 
-## 第5章 RDD 共享变量
+API：
+```python
+RDD.foreach(f)
+```
 
-## 第6章 Spark 内核调度
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+rdd.foreach(lambda x: print(x))
+```
+
+#### saveAsTextFile
+
+将 RDD 的数据写入到文本文件中，支持本地文件、HDFS 等
+
+> 和 foreach 类似，由 Executor 分布式执行，是不经过 Driver 的
+
+API：
+```python
+RDD.saveAsTextFile(path, compressionCodecClass=None)
+```
+
+### 分区操作算子
+
+#### mapPartitions
+
+与 [[2021-12-10-SparkCore#map|map]] 不同的是，mapPartitions 中传送的是每个分区的数据，作为一个迭代器（iterator）对象传入过来。
+
+ API：
+ ```python
+ RDD.mapPartitions(f, preservesPartitioning=False)
+ ```
+ 
+ 代码：
+ ```python
+ rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+
+def f(iterator): 
+	yield sum(iterator)
+
+print(rdd.mapPartitions(f).collect())
+```
+
+#### foreachPartition
+
+和 [[2021-12-10-SparkCore#foreach|foreach]] 类似，但一次处理的是一整个分区数据
+
+API：
+```python
+RDD.foreachPartition(f)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+
+def f(iterator): 
+	for i in iterator:
+		print(i * 2)
+
+rdd.foreachPartition(f)
+```
+
+#### partitionBy
+
+对 RDD 进行自定义分区操作
+
+API：
+```python
+RDD.partitionBy(numPartitions, partitionFunc=<function portable_hash>)
+```
+
+代码：
+```python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9], 3)
+rdd = rdd.map(lambda x: (x, 1))
+print(rdd.partitionBy(2, partitionFunc=lambda x: x % 2).glom().collect())
+```
+
+#### repartition
+
+修改 RDD 的分区数量（重新分区）
+
+> **注意**：对分区的数量进行操作，一定要慎重
+
+ API：
+ ```python
+ RDD.repartition(numPartitions)
+ ```
+ 
+ #### coalesce
+ 
+ 与 [[2021-12-10-SparkCore#repartition|repartition]] 类似，可以修改 RDD 的分区数据\
+ 不同的是，第2个参数表示增加分区是否需要 `shuffle`，默认是 False\
+ 如果不指定 `shuffle=True`，则只能减少分区，更加“安全”
+ 
+ API：
+ ```python
+ RDD.coalesce(numPartitions, shuffle=False)
+ ```
