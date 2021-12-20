@@ -8,17 +8,6 @@ toc: true
 mermaid: true
 ---
 
-```mermaid
-graph TB;
-    A[Do you have a problem in your life?]
-    B[Then don't worry]
-    C[Can you do something about it?]
-    A--no-->B;
-    A--yes-->C;
-    C--no-->B;
-    C--yes-->B;
-```
-
 ## 第3章 RDD 持久化
 
 ### RDD 的数据是过程数据
@@ -101,16 +90,6 @@ graph TB;
     C--yes-->B;
 ```
 
-
-需求：
-
-```mermaid
-graph LR;
-	A(业务需求)-->B(搜索关键词统计) & C(用户搜索点击统计) & D(搜索时间段统计);
-	B-->b1(字段:查询词) & b2(中文分词jieba);
-	C-->c1(字段:用户ID和查询词) & c2(分组&统计);
-	D-->d1(字段:访问时间) & d2(分组&统计&排序);
-```
 
 test
 
