@@ -89,6 +89,17 @@ graph LR;
 	D-->d1(字段:访问时间) & d2(分组&统计&排序);
 ```
 
+```mermaid
+graph TB;
+    A[Do you have a problem in your life?]
+    B[Then don't worry]
+    C[Can you do something about it?]
+    A--no-->B;
+    A--yes-->C;
+    C--no-->B;
+    C--yes-->B;
+```
+
 #### jieba 库使用入门
 
 jieba是优秀的中文分词第三方库
