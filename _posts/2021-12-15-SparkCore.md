@@ -91,6 +91,14 @@ graph TB;
 ```
 
 
+需求：
+
+```mermaid
+graph LR;
+	A(业务需求)-->B(搜索关键词统计);
+	B-->b1(字段:查询词);
+```
+
 test
 
 ```mermaid
