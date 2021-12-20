@@ -177,8 +177,100 @@ def extract_user_and_words(data):
     return l
 ```
 
+### 提交到集群运行
 
+```python
+spark-submit --master yarn --py-files /path/to/defs.py /path/to/main.py
+```
+
+**注意**：
+- 删除 `setMater` 部分
+- 读取的文件路径改为 hdfs 路径
+
+#### 榨干集群性能
+
+指定内存和 CPU 核心
+
+```python
+spark-submit --master yarn --py-files /path/to/defs.py \
+--executor-memory 2g \  # executor内存
+--executor-cores 1 \  # executor核心数
+--num-executors 6 \  # 总executor数量
+/path/to/main.py
+```
 
 ## 第5章 RDD 共享变量
+
+### 广播变量
+
+#### 引出问题
+
+案例代码：
+
+```python
+import time
+
+from pyspark import SparkConf, SparkContext
+from pyspark.storagelevel import StorageLevel
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName("test").setMaster("local[*]")
+    sc = SparkContext(conf=conf)
+
+    stu_info_list = [(1, '张大仙', 11), (2, '王晓晓', 13), (3, '张甜甜', 11),
+                     (4, '王大力', 11)]
+
+    score_info_rdd = sc.parallelize([
+        (1, '语文', 99), (2, '数学', 99), (3, '英语', 99), (4, '编程', 99),
+        (1, '语文', 99), (2, '编程', 99), (3, '语文', 99), (4, '英语', 99),
+        (1, '语文', 99), (3, '英语', 99), (2, '编程', 99)
+    ])
+
+    def map_func(data):
+        id = data[0]
+        name = ""
+        for stu_info in stu_info_list:
+            stu_id = stu_info[0]
+            if id == stu_id:
+                name = stu_info[1]
+
+        return (name, data[1], data[2])
+
+    print(score_info_rdd.map(map_func).collect())
+```
+
+本地 list 对象，被发送到每个分区的处理线程上使用，也就是每个 executor 内，其实存放了2份一样的数据。\
+executor 是`进程`，进程内资源共享，这2份数据没有必要，造成了内存浪费。
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/spark基础入门/广播变量-引出问题.png" alt="广播变量-引出问题." width="75%" />
+</div>
+
+#### 解决方案-广播变量
+
+如果将本地 list 对象标记为广播变量，那么 Spark 会：\
+只给每个 executor 一份数据，而不是像原本那样，每一个分区的处理`线程`各一份，节省了内存。
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/spark基础入门/广播变量.png" alt="广播变量" width="75%" />
+</div>
+
+#### 使用方法
+
+```python
+# 1. 将本地Python List对象标记为广播变量
+broadcast = sc.broadcast(stu_info_list)
+
+# 2. 在使用到本地集合对象的地方, 从广播变量中取出来用即可
+broadcast.value
+```
+
+### 累加器
+
+
+
+### 综合案例
+
+
 
 ## 第6章 Spark 内核调度
