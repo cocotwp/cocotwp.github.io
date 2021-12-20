@@ -78,15 +78,19 @@ CheckPoint 是一种重量级的使用，也就是 RDD 的重新计算成本很�
 
 [用户查询日志(SogouQ)](http://www.sogou.com/labs/resource/q.php)
 
-需求：
+业务需求：
 
-```mermaid
-graph LR
-	A(业务需求)--->B(搜索关键词统计) & C(用户搜索点击统计) & D(搜索时间段统计)
-	B---b1(字段:查询词) & b2(中文分词jieba)
-	C---c1(字段:用户ID和查询词) & c2(分组&统计)
-	D---d1(字段:访问时间) & d2(分组&统计&排序)
-```
+div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/搜索引擎日志分析-业务需求.png" alt="搜索引擎日志分析-业务需求" width="50%" />
+</div>
+
+	```mermaid
+	graph LR
+		A(业务需求)--->B(搜索关键词统计) & C(用户搜索点击统计) & D(搜索时间段统计)
+		B---b1(字段:查询词) & b2(中文分词jieba)
+		C---c1(字段:用户ID和查询词) & c2(分组&统计)
+		D---d1(字段:访问时间) & d2(分组&统计&排序)
+	```
 
 #### jieba 库使用入门
 
