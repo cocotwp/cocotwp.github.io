@@ -5,6 +5,7 @@ tags:
 - Spark
 - 黑马
 toc: true
+mermaid: true
 ---
 
 
@@ -243,7 +244,7 @@ if __name__ == '__main__':
 executor 是`进程`，进程内资源共享，这2份数据没有必要，造成了内存浪费。
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/spark基础入门/广播变量-引出问题.png" alt="广播变量-引出问题." width="75%" />
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/广播变量-引出问题.png" alt="广播变量-引出问题." width="75%" />
 </div>
 
 #### 解决方案-广播变量
@@ -252,7 +253,7 @@ executor 是`进程`，进程内资源共享，这2份数据没有必要，造�
 只给每个 executor 一份数据，而不是像原本那样，每一个分区的处理`线程`各一份，节省了内存。
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/spark基础入门/广播变量.png" alt="广播变量" width="75%" />
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/广播变量.png" alt="广播变量" width="75%" />
 </div>
 
 #### 使用方法

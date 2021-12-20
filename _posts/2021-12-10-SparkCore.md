@@ -42,7 +42,7 @@ toc: true
 5. Optionally, a list of preferred locations to compute each split on（可选，尽可能在本地运行）
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/spark基础入门/RDD五大特性示例.png" alt="RDD五大特性示例" width="75%" />
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/RDD五大特性示例.png" alt="RDD五大特性示例" width="75%" />
 </div>
 
 ## 第2章 RDD 编程入门
