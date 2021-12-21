@@ -1,0 +1,39 @@
+---
+layout: article
+title: Spark Core - Part III
+tags: 
+- Spark
+- 黑马
+toc: true
+---
+
+## 第6章 Spark 内核调度
+
+### DAG
+
+有向无环图（Directed Acyclic Graph）
+
+Spark 的核心是根据 **RDD** 来实现的，Spark Scheduler 则为 Spark 核心实现的重要一环，其作用就是任务调度。Spark 的任务调度就是如何组织任务去处理 RDD 中每个分区的数据，根据 RDD 的依赖关系构建 `DAG`，基于 DAG 划分 `Stage`， 将每个 Stage 中的任务发到指定节点运行。基于 Spark 的任务调度原理，可以合理规划资源利用，做到尽可能用最少的资源高效地完成任务计算。
+
+[[2021-12-15-SparkCore#RDD 的缓存|RDD 的缓存]] 对应的 DAG：
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/持久化DAG.png" alt="持久化DAG" width="85%" />
+</div>
+
+**结论**：1个Action = 1个DAG = 1个Job
+
+### 宽窄依赖和阶段划分
+
+- 窄依赖：父 RDD 的一个分区，将数据*全部*发给子 RDD 的*一个*分区（一对一、多对一）
+- 宽依赖：父 RDD 的一个分区，将数据发给子 RDD 的*多个*分区（一对多），又称 `shuffle`
+
+对于 Spark 来说，会根据 DAG，按照宽依赖划分不同的阶段\
+*划分依据*：从后向前，遇到宽依赖，就划分出一个阶段，称之为 `stage`
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/阶段划分.png" alt="阶段划分" width="90%" />
+</div>
+
+### 内存迭代计算
+

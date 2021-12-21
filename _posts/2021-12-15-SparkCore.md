@@ -5,7 +5,6 @@ tags:
 - Spark
 - 黑马
 toc: true
-mermaid: true
 ---
 
 ## 第3章 RDD 持久化
@@ -40,6 +39,51 @@ RDD.persist(storageLevel=StorageLevel(False, True, False, False, 1))
 
 - 缓存技术可以将过程 RDD 数据，持久化保存到内存或者硬盘上
 - 在设计上**存在**丢失风险，因此，Spark 会保留 RDD 之间的血缘关系
+
+示例代码：
+
+```python
+from pyspark import SparkConf, SparkContext
+from defs import context_jieba, filter_words, append_words, extract_user_and_words
+from operator import add
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName('myApp').setMaster('local')
+    sc = SparkContext(conf=conf)
+
+    file_rdd = sc.textFile('./data/input/SogouQ.txt')
+    split_rdd = file_rdd.map(lambda x: x.split("\t"))
+    split_rdd.cache()  # 写入缓存
+
+    # 搜索关键词统计
+    context_rdd = split_rdd.map(lambda x: x[2])
+    words_rdd = context_rdd.flatMap(context_jieba)
+    filter_rdd = words_rdd.filter(filter_words)
+    append_rdd = filter_rdd.map(append_words)
+    # 聚合
+    result1 = append_rdd.reduceByKey(lambda a, b: a + b).\
+        sortBy(lambda x: x[1], ascending=False).\
+        take(5)
+    print(result1)
+
+    # 用户搜索点击统计
+    user_content_rdd = split_rdd.map(lambda x: (x[1], x[2]))
+    user_words_rdd = user_content_rdd.flatMap(extract_user_and_words)
+    # 聚合
+    result2 = user_words_rdd.reduceByKey(lambda a,b: a+b).\
+        sortBy(lambda x: x[1], ascending=False).\
+        take(5)
+    print(result2)
+
+    # 搜索时间段统计
+    time_rdd = split_rdd.map(lambda x: x[0])
+    hour_rdd = time_rdd.map(lambda x: (x.split(":")[0], 1))
+    #聚合
+    result3 = hour_rdd.reduceByKey(add).\
+        sortBy(lambda x: x[1], ascending=False).\
+        take(5)
+    print(result3)
+```
 
 ### RDD 的 CheckPoint
 
@@ -80,17 +124,9 @@ CheckPoint 是一种重量级的使用，也就是 RDD 的重新计算成本很�
 
 业务需求：
 
-div align="center">
+<div align="center">
 	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/搜索引擎日志分析-业务需求.png" alt="搜索引擎日志分析-业务需求" width="50%" />
 </div>
-
-	```mermaid
-	graph LR
-		A(业务需求)--->B(搜索关键词统计) & C(用户搜索点击统计) & D(搜索时间段统计)
-		B---b1(字段:查询词) & b2(中文分词jieba)
-		C---c1(字段:用户ID和查询词) & c2(分组&统计)
-		D---d1(字段:访问时间) & d2(分组&统计&排序)
-	```
 
 #### jieba 库使用入门
 
@@ -250,7 +286,7 @@ executor 是`进程`，进程内资源共享，这2份数据没有必要，造�
 	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/广播变量-引出问题.png" alt="广播变量-引出问题." width="75%" />
 </div>
 
-#### 解决方案-广播变量
+#### 解决方案 - 广播变量
 
 如果将本地 list 对象标记为广播变量，那么 Spark 会：\
 只给每个 executor 一份数据，而不是像原本那样，每一个分区的处理`线程`各一份，节省了内存。
@@ -271,10 +307,114 @@ broadcast.value
 
 ### 累加器
 
+#### 引出问题
 
+案例代码：
+
+```python
+# coding:utf8
+from pyspark import SparkConf, SparkContext
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName("test").setMaster("local[*]")
+    sc = SparkContext(conf=conf)
+
+    def map_func(date):
+        global count
+        count += 1
+        print(count)
+
+    rdd = sc.parallelize([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2)
+    count = 0
+    # count = sc.accumulator(0)
+
+    rdd.map(map_func).collect()
+    print(count)  # 0
+    # print(count)  # 10
+```
+
+driver 将 `count` 对象复制发送给每个 executor，此时，driver 和每个 executor 各有一个 `count`，互不相干。
+
+#### 解决方案 - 累加器
+
+使用累加器对象（`sc.accumulator(init_value)`），这个对象可以从各个 executor 中收集它们的执行结果，作用回自己身上。
+
+#### 注意事项
+
+```python
+    rdd2 = rdd1.map(map_func)
+    rdd2.collect()
+    rdd3 = rdd2.map(lambda x: x)
+    rdd3.collect()
+    print(count)  # 20
+```
+
+**原因**：构建 rdd3 时，rdd2 不存在，需要重新再次构建 rdd2，所有 `map_func` 被调用两次。
 
 ### 综合案例
 
+源数据：
 
+```
+   hadoop spark # hadoop spark spark
+mapreduce ! spark spark hive !
+hive spark hadoop mapreduce spark %
+   spark hive sql sql spark hive , hive spark !
+!  hdfs hdfs mapreduce mapreduce spark hive
 
-## 第6章 Spark 内核调度
+  #
+```
+
+需求：
+1. 正常单词统计计数
+2. 特殊字符统计总数
+
+代码：
+
+```python
+# coding:utf8
+from pyspark import SparkConf, SparkContext
+import re
+from operator import add
+
+if __name__ == '__main__':
+    conf = SparkConf().setAppName("test").setMaster("local[*]")
+    sc = SparkContext(conf=conf)
+
+    file_rdd = sc.textFile("./data/input/accumulator_broadcast_data.txt")
+    abnormal_char = [",", ".", "!", "#", "$", "%"]
+
+    # 广播特殊字符变量
+    broadcast = sc.broadcast(abnormal_char)
+    # 定义累加器
+    acmlt = sc.accumulator(0)
+
+    # 处理数据
+    # 1. 删除空行
+    # 2. 删除每行两端空格
+    # 3. 正则表达式、切分
+    words_rdd = file_rdd.filter(lambda l: l.strip()).\
+        map(lambda l: l.strip()).\
+        flatMap(lambda l: re.split("\s+", l))
+
+    # 过滤特殊字符，同时计数
+    def filter_func(data):
+        global acmlt
+        if data in broadcast.value:
+            acmlt += 1
+            return False
+        else:
+            return True
+
+    normal_words_rdd = words_rdd.filter(filter_func)
+
+    # 正常单词计数
+    result_rdd = normal_words_rdd.map(lambda x: (x, 1)).\
+        reduceByKey(add)
+
+    # 打印结果
+    print(result_rdd.collect())
+	# [('hadoop', 3), ('spark', 11), ('mapreduce', 4), ('hive', 6), ('sql', 2), ('hdfs', 2)]
+    print(acmlt)  # 8
+```
+
