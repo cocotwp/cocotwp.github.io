@@ -18,7 +18,7 @@ Spark 的核心是根据 **RDD** 来实现的，Spark Scheduler 则为 Spark 核
 [[2021-12-15-SparkCore#RDD 的缓存|RDD 的缓存]] 对应的 DAG：
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/持久化DAG.png" alt="持久化DAG" width="85%" />
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/持久化DAG.png" alt="持久化DAG" width="95%" />
 </div>
 
 **结论**：1个Action = 1个DAG = 1个Job
@@ -32,8 +32,11 @@ Spark 的核心是根据 **RDD** 来实现的，Spark Scheduler 则为 Spark 核
 *划分依据*：从后向前，遇到宽依赖，就划分出一个阶段，称之为 `stage`
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/阶段划分.png" alt="阶段划分" width="90%" />
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/阶段划分.png" alt="阶段划分" width="80%" />
 </div>
 
 ### 内存迭代计算
 
+TEST:
+
+a|b
