@@ -15,7 +15,7 @@ toc: true
 
 Spark 的核心是根据 **RDD** 来实现的，Spark Scheduler 则为 Spark 核心实现的重要一环，其作用就是任务调度。Spark 的任务调度就是如何组织任务去处理 RDD 中每个分区的数据，根据 RDD 的依赖关系构建 `DAG`，基于 DAG 划分 `Stage`， 将每个 Stage 中的任务发到指定节点运行。基于 Spark 的任务调度原理，可以合理规划资源利用，做到尽可能用最少的资源高效地完成任务计算。
 
-[[2021-12-15-SparkCore#RDD 的缓存|RDD 的缓存]] 对应的 DAG：
+[[2021-12-15-SparkCore#RDD 的缓存\|RDD 的缓存]] 对应的 DAG：
 
 <div align="center">
 	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/持久化DAG.png" alt="持久化DAG" width="95%" />
