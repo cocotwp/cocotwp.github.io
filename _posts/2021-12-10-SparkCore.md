@@ -443,7 +443,7 @@ print(rdd.reduce(lambda a, b: a + b))
 
 #### fold
 
-和 [[2021-12-10-SparkCore#reduce|reduce]] 类似，按照指定方法进行聚合，但是是带有初始值的\
+和 [[2021-12-10-SparkCore#reduce\|reduce]] 类似，按照指定方法进行聚合，但是是带有初始值的\
 这个初始值会作用在：分区内聚合、分区间聚合
 
 API：
@@ -513,7 +513,7 @@ print(rdd.takeSample(True, 3))
 #### takeOrdered
 
 对 RDD 排序后取前 N 个\
-与 [[2021-12-10-SparkCore#top|top]] 不同的是，既可以升序（默认），也可以通过可选的方法实现降序
+与 [[2021-12-10-SparkCore#top\|top]] 不同的是，既可以升序（默认），也可以通过可选的方法实现降序
 
 API：
 ```python
@@ -529,7 +529,7 @@ print(rdd.takeOrdered(5, key=lambda x: -x))
 
 #### foreach
 
-和 [[2021-12-10-SparkCore#map|map]] 类似，将方法应用到 RDD 中的每个元素，**但是**这个方法没有返回值
+和 [[2021-12-10-SparkCore#map\|map]] 类似，将方法应用到 RDD 中的每个元素，**但是**这个方法没有返回值
 
 > 在 Executor 中分布式执行，不需要向 Driver 汇报，因此在某些场景下更加高效。
 
@@ -559,7 +559,7 @@ RDD.saveAsTextFile(path, compressionCodecClass=None)
 
 #### mapPartitions
 
-与 [[2021-12-10-SparkCore#map|map]] 不同的是，mapPartitions 中传送的是每个分区的数据，作为一个迭代器（iterator）对象传入过来。
+与 [[2021-12-10-SparkCore#map\|map]] 不同的是，mapPartitions 中传送的是每个分区的数据，作为一个迭代器（iterator）对象传入过来。
 
  API：
  ```python
@@ -578,7 +578,7 @@ print(rdd.mapPartitions(f).collect())
 
 #### foreachPartition
 
-和 [[2021-12-10-SparkCore#foreach|foreach]] 类似，但一次处理的是一整个分区数据
+和 [[2021-12-10-SparkCore#foreach\|foreach]] 类似，但一次处理的是一整个分区数据
 
 API：
 ```python
@@ -625,7 +625,7 @@ RDD.repartition(numPartitions)
 
 #### coalesce
 
-与 [[2021-12-10-SparkCore#repartition|repartition]] 类似，可以修改 RDD 的分区数据\
+与 [[2021-12-10-SparkCore#repartition\|repartition]] 类似，可以修改 RDD 的分区数据\
 不同的是，第2个参数表示增加分区是否需要 `shuffle`，默认是 False\
 如果不指定 `shuffle=True`，则只能减少分区，更加“安全”
  
