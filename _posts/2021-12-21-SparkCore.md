@@ -148,35 +148,28 @@ Spark Shuffle 分为 `Write` 和 `Read` 两个阶段，分属于两个不同的 
 
 **spark shuffle 调优**：主要是调整缓冲的大小，拉取次数重试重试次数与等待时间，内存比例分配，是否进行排序操作等等
 
-*spark.shuffle.file.buffer*：
-
-参数说明：该参数用于设置 shuffle write task 的 BufferedOutputStream 的 buffer 缓冲大小（默认是32K）。将数据写到磁盘文件之前，会先写入buffer缓冲中，待缓冲写满之后，才会溢写 到磁盘。
-
+*spark.shuffle.file.buffer*：\
+参数说明：该参数用于设置 shuffle write task 的 BufferedOutputStream 的 buffer 缓冲大小（默认是32K）。将数据写到磁盘文件之前，会先写入buffer缓冲中，待缓冲写满之后，才会溢写 到磁盘。\
 调优建议：如果作业可用的内存资源较为充足的话，可以适当增加这个参数的大小(比如64k)，从而减少shuffle write过程中溢写磁盘文件的次数，也就可以减少磁盘 IO 次数，进而提升性 能。在实践中发现，合理调节该参数，性能会有1%~5%的提升。
 
-*spark.reducer.maxSizeInFlight*：
-
-参数说明：该参数用于设置 shuffle read task 的 buffer 缓冲大小，而这个 buffer 缓冲决定了每次能够拉取多少数据。（默认48M）
-
+*spark.reducer.maxSizeInFlight*：\
+参数说明：该参数用于设置 shuffle read task 的 buffer 缓冲大小，而这个 buffer 缓冲决定了每次能够拉取多少数据。（默认48M）\
 调优建议：如果作业可用的内存资源较为充足的话，可以适当增加这个参数的大小（比如96M），从而减少拉取数据的次数，也就可以减少网络传输的次数，进而提升性能。在实践中发现 ，合理调节该参数，性能会有1%~5%的提升。
 
-*spark.shuffle.io.maxRetries* and *spark.shuffle.io.retryWait*：
-
-spark.shuffle.io.maxRetries：shuffle read task 从 shuffle write task 所在节点拉取属于自己的数据时，如果因为网络异常导致拉取失败，是会自动进行重试的。该参数就代表了可以重试的最大次数。（默认是3次）
-
-spark.shuffle.io.retryWait：该参数代表了每次重试拉取数据的等待间隔。（默认为5s） 
-
+*spark.shuffle.io.maxRetries* 和 *spark.shuffle.io.retryWait*：\
+spark.shuffle.io.maxRetries：shuffle read task 从 shuffle write task 所在节点拉取属于自己的数据时，如果因为网络异常导致拉取失败，是会自动进行重试的。该参数就代表了可以重试的最大次数。（默认是3次）\
+spark.shuffle.io.retryWait：该参数代表了每次重试拉取数据的等待间隔。（默认为5s）\
 调优建议：一般的调优都是将重试次数调高，不调整时间间隔。
 
-*spark.shuffle.memoryFraction*：
-
+*spark.shuffle.memoryFraction*：\
 参数说明：该参数代表了 Executor 内存中，分配给 shuffle read task 进行聚合操作内存比例。
 
-*spark.shuffle.manager*：
-
+*spark.shuffle.manager*：\
 参数说明：该参数用于设置 shufflemanager 的类型（默认为sort）。\
 Spark1.5x以后有三个可选项：
 - Hash：spark1.x 版本的默认值，HashShuffleManager
-- Sort:spark2.x版本的默认值，普通机制，当shuffle read task 的数量小于等于 spark.shuffle.sort.bypassMergeThreshold 参数，自动开启 bypass 机制 spark.shuffle.sort.bypassMergeThreshold
+- Sort:spark2.x版本的默认值，普通机制，当shuffle read task 的数量小于等于 spark.shuffle.sort.bypassMergeThreshold 参数，自动开启 bypass 机制
 
-参数说明：当 ShuffleManager 为 SortShuffleManager 时，如果 shuffle read task 的数量小于这个阈值（默认是200），则 shuffle write 过程中不会进行排序操作。 调优建议:当你使用 SortShuffleManager 时，如果的确不需要排序操作，那么建议将这个参数调大一些。
+*spark.shuffle.sort.bypassMergeThreshold*：\
+参数说明：当 ShuffleManager 为 SortShuffleManager 时，如果 shuffle read task 的数量小于这个阈值（默认是200），则 shuffle write 过程中不会进行排序操作。\
+调优建议：当你使用 SortShuffleManager 时，如果的确不需要排序操作，那么建议将这个参数调大一些。
