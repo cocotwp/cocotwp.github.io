@@ -93,9 +93,90 @@ Spark 程序的调度流程如下：
 
 **DAG 调度器**
 
-工作内容：将逻辑的 DAG 图进行处理，最终得到逻辑上的`Task`划分
+工作内容：将逻辑的 DAG 图进行处理，最终得到逻辑上的`Task`划分.
 
 **Task 调度器**
 
 工作内容：基于 DAG 调度器的产出，来规划*逻辑*的 task，应该在哪些*物理*的 executor 上运行，以及监控管理它们的运行。
 
+### 拓展
+
+**spark官方概念名词大全**
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/spark官方概念名词大全.png" alt="spark官方概念名词大全" width="75%" />
+</div>
+
+**层级关系疏离**
+
+- 一个 Spark 环境可以运行多个 Application
+- 一个用户程序运行起来，会成为一个 Application
+- Application 内部可以有多个 Job
+- 每个 Job 由一个 Action 产生，并且每个 Job 有自己的 DAG 执行图
+- 一个 Job 的 DAG 图会给予宽窄依赖划分成不同的 Stage
+- 不同 Stage 内基于分区数量，形成多个并行的内存迭代管道
+- 每一个内存迭代管道形成一个 Task
+
+### Spark Shuffle
+
+Spark 在 DAG 调度阶段会将一个 Job 划分为多个 Stage，上游 Stage 做 map 工作，下游 Stage 做 reduce 工作，其本质上还是 MapReduce 计算框架。Shuffle 是连接 map 和 reduce 之间的桥梁，它将 map 的输出对应到 reduce 输入中，涉及到序列化反序列化、跨节电网络 IO 以及磁盘读写 IO 等。
+
+<div align="center">
+	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/sparkShuffle.png" alt="sparkShuffle" width="75%" />
+</div>
+
+Spark Shuffle 分为 `Write` 和 `Read` 两个阶段，分属于两个不同的 Stage，前者是 Parent Stage 的最后一步，后者是 Child Stage 的第一步。
+
+#### Hash Shuffle
+
+- 上游 task 数量：*m*
+- 下游 task 数量：*n*
+- 上游 executor 数量：*k（m>=k）*
+
+总共的磁盘文件：
+
+**未经优化的**：m\*n\
+**优化之后的**：k\*n
+
+#### Sort Shuffle
+
+- SortShuffle 分为普通机制和 bypass 机制
+- 普通机制在内存数据结构（默认为5M）完成排序，会产生2M个磁盘小文件。
+- 而当 shuffle map task 数量小于 `spark.shuffle.sort.bypassMergeThreshold` 参数的值，或者算子不是聚合类的 shuffle 算子（比如 reduceByKey）的时候会触发 SortShuffle 的 bypass 机制，SortShuffle 的 bypass 机制不会进行排序，极大地提高了性能。
+
+#### Shuffle 的配置选项
+
+**spark shuffle 调优**：主要是调整缓冲的大小，拉取次数重试重试次数与等待时间，内存比例分配，是否进行排序操作等等
+
+*spark.shuffle.file.buffer*：
+
+参数说明：该参数用于设置 shuffle write task 的 BufferedOutputStream 的 buffer 缓冲大小（默认是32K）。将数据写到磁盘文件之前，会先写入buffer缓冲中，待缓冲写满之后，才会溢写 到磁盘。
+
+调优建议：如果作业可用的内存资源较为充足的话，可以适当增加这个参数的大小(比如64k)，从而减少shuffle write过程中溢写磁盘文件的次数，也就可以减少磁盘 IO 次数，进而提升性 能。在实践中发现，合理调节该参数，性能会有1%~5%的提升。
+
+*spark.reducer.maxSizeInFlight*：
+
+参数说明：该参数用于设置 shuffle read task 的 buffer 缓冲大小，而这个 buffer 缓冲决定了每次能够拉取多少数据。（默认48M）
+
+调优建议：如果作业可用的内存资源较为充足的话，可以适当增加这个参数的大小（比如96M），从而减少拉取数据的次数，也就可以减少网络传输的次数，进而提升性能。在实践中发现 ，合理调节该参数，性能会有1%~5%的提升。
+
+*spark.shuffle.io.maxRetries* and *spark.shuffle.io.retryWait*：
+
+spark.shuffle.io.maxRetries：shuffle read task 从 shuffle write task 所在节点拉取属于自己的数据时，如果因为网络异常导致拉取失败，是会自动进行重试的。该参数就代表了可以重试的最大次数。（默认是3次）
+
+spark.shuffle.io.retryWait：该参数代表了每次重试拉取数据的等待间隔。（默认为5s） 
+
+调优建议：一般的调优都是将重试次数调高，不调整时间间隔。
+
+*spark.shuffle.memoryFraction*：
+
+参数说明：该参数代表了 Executor 内存中，分配给 shuffle read task 进行聚合操作内存比例。
+
+*spark.shuffle.manager*：
+
+参数说明：该参数用于设置 shufflemanager 的类型（默认为sort）。\
+Spark1.5x以后有三个可选项：
+- Hash：spark1.x 版本的默认值，HashShuffleManager
+- Sort:spark2.x版本的默认值，普通机制，当shuffle read task 的数量小于等于 spark.shuffle.sort.bypassMergeThreshold 参数，自动开启 bypass 机制 spark.shuffle.sort.bypassMergeThreshold
+
+参数说明：当 ShuffleManager 为 SortShuffleManager 时，如果 shuffle read task 的数量小于这个阈值（默认是200），则 shuffle write 过程中不会进行排序操作。 调优建议:当你使用 SortShuffleManager 时，如果的确不需要排序操作，那么建议将这个参数调大一些。
