@@ -145,7 +145,7 @@ Shuffle 是连接 map 和 reduce 之间的桥梁，它将 map 的输出对应到
 
 | | 普通机制的SortShuffleManager | ByPass机制的SortShuffleManager |
 | --- | :---: | :---: |
-| 示例 | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/普通机制的SortShuffleManager.png" alt="普通机制的HashShuffleManager" height="200px" /> | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/ByPass机制的HashShuffleManager.png" alt="ByPass机制的SortShuffleManager" height="200px" /> |
+| 示例 | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/普通机制的SortShuffleManager.png" alt="普通机制的HashShuffleManager" height="200px" /> | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/ByPass机制的SortShuffleManager.png" alt="ByPass机制的SortShuffleManager" height="200px" /> |
 
 - SortShuffleManager 进一步减少了磁盘文件数量，以节省网络 IO 的开销。
 - SortShuffleManager 分为普通机制和 bypass 机制。
