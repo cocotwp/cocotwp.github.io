@@ -119,24 +119,27 @@ Spark 程序的调度流程如下：
 
 ### Spark Shuffle
 
-Spark 在 DAG 调度阶段会将一个 Job 划分为多个 Stage，上游 Stage 做 map 工作，下游 Stage 做 reduce 工作，其本质上还是 MapReduce 计算框架。Shuffle 是连接 map 和 reduce 之间的桥梁，它将 map 的输出对应到 reduce 输入中，涉及到序列化反序列化、跨节电网络 IO 以及磁盘读写 IO 等。
+Spark 在 DAG 调度阶段会将一个 Job 划分为多个 Stage，上游 Stage 做 map 工作，下游 Stage 做 reduce 工作，其本质上还是 MapReduce 计算框架。\
+Shuffle 是连接 map 和 reduce 之间的桥梁，它将 map 的输出对应到 reduce 输入中，涉及到序列化反序列化、跨节电网络 IO 以及磁盘读写 IO 等。
 
 <div align="center">
 	<img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/sparkShuffle.png" alt="sparkShuffle" width="75%" />
 </div>
 
-Spark Shuffle 分为 `Write` 和 `Read` 两个阶段，分属于两个不同的 Stage，前者是 Parent Stage 的最后一步，后者是 Child Stage 的第一步。
+在 Shuffle 过程中，提供数据的称之为 `Map` 端（Shuffle Write）；接受数据的称之为 Reduce 端（Shuffle Read）
 
 #### Hash Shuffle
 
-- 上游 task 数量：*m*
-- 下游 task 数量：*n*
-- 上游 executor 数量：*k（m>=k）*
+| | 未经优化的HashShuffleManager | 优化后的HashShuffleManager |
+| --- | :---: | :---: |
+| 示例 | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/未经优化的HashShuffleManager.png" alt="未经优化的HashShuffleManager" height="200px" /> | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/优化后的HashShuffleManager.png" alt="优化后的HashShuffleManager" height="200px" /> |
+| 磁盘文件数量[^1] | m\*n | k\*n |
 
-总共的磁盘文件：
+[^1]: 上游 task 数量：*m*；下游 task 数量：*n*；上游 executor 数量：*k（m>=k）*
 
-**未经优化的**：m\*n\
-**优化之后的**：k\*n
+优化在于：
+- 在一个 Executor 内，不同 Task 共享 buffer 缓冲区
+- 减少了缓冲区和磁盘文件的数量，提高性能
 
 #### Sort Shuffle
 
