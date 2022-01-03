@@ -143,7 +143,12 @@ Shuffle 是连接 map 和 reduce 之间的桥梁，它将 map 的输出对应到
 
 #### Sort Shuffle
 
-- SortShuffle 分为普通机制和 bypass 机制
+| | 普通机制的SortShuffleManager | ByPass机制的SortShuffleManager |
+| --- | :---: | :---: |
+| 示例 | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/普通机制的SortShuffleManager.png" alt="普通机制的HashShuffleManager" height="200px" /> | <img src="https://raw.githubusercontent.com/cocotwp/cocotwp.github.io/master/assets/images/sparkcore/ByPass机制的HashShuffleManager.png" alt="ByPass机制的SortShuffleManager" height="200px" /> |
+
+- SortShuffleManager 进一步减少了磁盘文件数量，以节省网络 IO 的开销。
+- SortShuffleManager 分为普通机制和 bypass 机制。
 - 普通机制在内存数据结构（默认为5M）完成排序，会产生2M个磁盘小文件。
 - 而当 shuffle map task 数量小于 `spark.shuffle.sort.bypassMergeThreshold` 参数的值，或者算子不是聚合类的 shuffle 算子（比如 reduceByKey）的时候会触发 SortShuffle 的 bypass 机制，SortShuffle 的 bypass 机制不会进行排序，极大地提高了性能。
 
@@ -176,3 +181,8 @@ Spark1.5x以后有三个可选项：
 *spark.shuffle.sort.bypassMergeThreshold*：\
 参数说明：当 ShuffleManager 为 SortShuffleManager 时，如果 shuffle read task 的数量小于这个阈值（默认是200），则 shuffle write 过程中不会进行排序操作。\
 调优建议：当你使用 SortShuffleManager 时，如果的确不需要排序操作，那么建议将这个参数调大一些。
+
+#### 总结
+
+1. SortShuffle 对比 HashShuffle 可以减少很多的磁盘文件，以节省网络 IO 的开销
+2. SortShuffle 主要是对磁盘文件进行合并来进行文件数量的减少，同时两类 Shuffle 都需要经过内存缓冲区溢写磁盘的场景，所以可以得知，尽管 Spark 是内存迭代计算框架，但是内存迭代主要在窄依赖中。在宽依赖（Shuffle）中磁盘交互还是一个无可避免的情况。所以，我们要尽量减少 Shuffle 的出现，不要进行无意义的 Shuffle 计算。
