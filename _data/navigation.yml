@@ -49,5 +49,5 @@ header:
       # @end locale config
     url: /about.html
 
-  - titles: Test
+  - title: Test
     url: /test/
