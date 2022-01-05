@@ -131,8 +131,8 @@ comments:
     clientSecret: e8a0f1e19692d59ee8dad3550b7ef5d3da1abf9c # GitHub Application Client Secret
     repository  : cocotwp.github.io # GitHub repo
     owner       : cocotwp # GitHub repo owner
-    admin: cocotwp # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
-      # - your GitHub Id
+    admin: # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
+      - cocotwp # - your GitHub Id
 
   ## Valine
   # please refer to https://valine.js.org/en/ for more info.
