@@ -126,13 +126,21 @@ comments:
 
   ## Gitalk
   # please refer to https://github.com/gitalk/gitalk for more info.
+  # gitalk:
+  #   clientID    : c6543cc8bcfdcf478fab # GitHub Application Client ID
+  #   clientSecret: e8a0f1e19692d59ee8dad3550b7ef5d3da1abf9c # GitHub Application Client Secret
+  #   repository  : helloword # GitHub repo
+  #   owner       : cocotwp # GitHub repo owner
+  #   admin: # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
+  #     - cocotwp # - your GitHub Id
+
   gitalk:
-    clientID    : c6543cc8bcfdcf478fab # GitHub Application Client ID
-    clientSecret: e8a0f1e19692d59ee8dad3550b7ef5d3da1abf9c # GitHub Application Client Secret
-    repository  : helloword # GitHub repo
-    owner       : cocotwp # GitHub repo owner
-    admin: # GitHub repo owner and collaborators, only these guys can initialize GitHub issues, IT IS A LIST.
-      - cocotwp # - your GitHub Id
+    clientID    : 143666b578a416f82175
+    clientSecret: 1d1c0604a1a4bff9b59ab7f56724dc0e8b837775
+    repository  : gitalk-demo
+    owner       : kitian616
+    admin:
+      - kitian616
 
   ## Valine
   # please refer to https://valine.js.org/en/ for more info.
